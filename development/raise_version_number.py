@@ -22,7 +22,7 @@
 import os
 import sys
 
-from release_tools import replace_version, get_setup_properties
+from release_tools import get_setup_properties, replace_version
 
 properties = get_setup_properties()
 
@@ -43,13 +43,13 @@ if current_version == new_version:
 
 print(f"setting {package_name} version number from {current_version} to {new_version}")
 
-files = ["setup.py", "meta.yaml", "docs/conf.py", package_name+"/__init__.py"]
+files = ["setup.py", "meta.yaml", "docs/conf.py", package_name + "/__init__.py"]
 
 # Let's go
 for file in files:
     if replace_version(file, current_version, new_version):
         os.system(f"git add {file}")
-    
+
 # commit changes
-os.system("git commit -m \"set version to v%s\"" % new_version)
-os.system("git tag \"v%s\"" % new_version)
+os.system(f"git commit -m \"set version to v{new_version}\"")
+os.system(f"git tag \"v{new_version}\"")

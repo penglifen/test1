@@ -1,19 +1,20 @@
 from typing import Optional
-from matplotlib.backends.qt_compat import QtCore, QtGui, QtWidgets
 
 import matplotlib as mpl
-import matplotlib.transforms as transforms
-from matplotlib.figure import Figure
+from matplotlib import transforms
 from matplotlib.artist import Artist
+from matplotlib.backends.qt_compat import QtCore, QtGui, QtWidgets
+from matplotlib.figure import Figure
+
 try:  # starting from mpl version 3.6.0
     from matplotlib.axes import Axes
-except:
+except Exception:
     from matplotlib.axes._subplots import Axes
+
 from matplotlib.text import Text
-import matplotlib.transforms as transforms
 
 from pylustrator.helper_functions import changeFigureSize, main_figure
-from pylustrator.QLinkableWidgets import DimensionsWidget, ComboWidget
+from pylustrator.QLinkableWidgets import ComboWidget, DimensionsWidget
 
 
 class QPosAndSize(QtWidgets.QWidget):
@@ -23,7 +24,7 @@ class QPosAndSize(QtWidgets.QWidget):
     scale_type = 0
 
     def __init__(self, layout: QtWidgets.QLayout, signals: "Signals"):
-        """ a widget that holds all the properties to set and the tree view
+        """ A widget that holds all the properties to set and the tree view.
 
         Args:
             layout: the layout to which to add the widget
@@ -59,7 +60,7 @@ class QPosAndSize(QtWidgets.QWidget):
         self.fig = figure
 
     def select_element(self, element):
-        """ select an element """
+        """ Select an element. """
         if element is None:
             self.setElement(self.fig)
         else:
@@ -69,23 +70,23 @@ class QPosAndSize(QtWidgets.QWidget):
         self.setElement(self.element)
 
     def changeTransform(self):
-        """ change the transform and the units of the position and size widgets """
+        """ Change the transform and the units of the position and size widgets. """
         name = self.input_transform.text()
-        self.transform_index = ["cm", "in", "px", "none"].index(name)#transform_index
+        self.transform_index = ["cm", "in", "px", "none"].index(name)  # transform_index
         if name == "none":
             name = ""
         self.input_shape.setUnit(name)
         self.input_position.setUnit(name)
         self.setElement(self.element)
 
-    def changeTransform2(self):#, state: int, name: str):
-        """ when the dimension change type is changed from 'scale' to 'bottom right' or 'bottom left' """
+    def changeTransform2(self):  # , state: int, name: str):
+        """ When the dimension change type is changed from 'scale' to 'bottom right' or 'bottom left'. """
         name = self.input_shape_transform.text()
         self.scale_type = ["scale", "bottom right", "top left"].index(name)
-        #self.scale_type = state
+        # self.scale_type = state
 
     def changePos(self, value_x: float, value_y: float):
-        """ change the position of an axes """
+        """ Change the position of an axes. """
         elements = [self.element]
         elements += [element.target for element in main_figure(self.element).selection.targets]
 
@@ -140,7 +141,7 @@ class QPosAndSize(QtWidgets.QWidget):
         self.fig.canvas.draw()
 
     def changeSize(self, value: list):
-        """ change the size of an axes or figure """
+        """ Change the size of an axes or figure. """
         if isinstance(self.element, Figure):
 
             if self.scale_type == 0:
@@ -160,7 +161,7 @@ class QPosAndSize(QtWidgets.QWidget):
                     pos.x0, pos.y0, pos.width, pos.height))
                 for text in self.fig.texts:
                     pos = text.get_position()
-                    self.fig.change_tracker.addChange(text, ".set_position([%f, %f])" % (pos[0], pos[1]))
+                    self.fig.change_tracker.addChange(text, f".set_position([{pos[0]:f}, {pos[1]:f}])")
 
             self.fig.selection.update_selection_rectangles()
             self.fig.canvas.draw()
@@ -206,9 +207,8 @@ class QPosAndSize(QtWidgets.QWidget):
             self.fig.signals.figure_selection_property_changed.emit()
             self.fig.canvas.draw()
 
-
     def getTransform(self, element: Artist) -> Optional[mpl.transforms.Transform]:
-        """ get the transform of an Artist """
+        """ Get the transform of an Artist. """
         if isinstance(element, Figure):
             if self.transform_index == 0:
                 return transforms.Affine2D().scale(2.54, 2.54)
@@ -232,8 +232,8 @@ class QPosAndSize(QtWidgets.QWidget):
         return None
 
     def setElement(self, element: Artist):
-        """ set the target Artist of this widget """
-        #self.label.setText(str(element))
+        """ Set the target Artist of this widget. """
+        # self.label.setText(str(element))
         self.element = element
 
         self.input_shape_transform.setDisabled(True)
@@ -265,5 +265,5 @@ class QPosAndSize(QtWidgets.QWidget):
                 self.input_position.setValue((pos.x0, pos.y0))
             self.input_transform.setEnabled(True)
             self.input_position.setEnabled(True)
-        except:
+        except Exception:
             self.input_position.setDisabled(True)

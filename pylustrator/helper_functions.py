@@ -20,25 +20,30 @@
 # along with Pylustrator. If not, see <http://www.gnu.org/licenses/>
 
 from __future__ import division
-import matplotlib.pyplot as plt
-from matplotlib.text import Text
-import numpy as np
+
 import traceback
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.text import Text
+
 from .parse_svg import svgread
+
 try:  # starting from mpl version 3.6.0
     from matplotlib.axes import Axes
-except:
+except Exception:
     from matplotlib.axes._subplots import Axes
-from matplotlib.figure import Figure
-from .pyjack import replace_all_refs
+
 import os
 from typing import Sequence, Union
 
+from matplotlib.figure import Figure
+
+from .pyjack import replace_all_refs
+
 
 def fig_text(x: float, y: float, text: str, unit: str = "cm", *args, **kwargs):
-    """
-    add a text to the figure positioned in cm
-    """
+    """  Add a text to the figure positioned in cm. """
     fig = plt.gcf()
     if unit == "cm":
         x = x / 2.54 / fig.get_size_inches()[0]
@@ -51,9 +56,7 @@ def fig_text(x: float, y: float, text: str, unit: str = "cm", *args, **kwargs):
 
 
 def add_axes(dim: Sequence, unit: str = "cm", *args, **kwargs):
-    """
-    add an axes with dimensions specified in cm
-    """
+    """ Add an axes with dimensions specified in cm. """
     fig = plt.gcf()
     x, y, w, h = dim
     if unit == "cm":
@@ -69,15 +72,16 @@ def add_axes(dim: Sequence, unit: str = "cm", *args, **kwargs):
 
 
 def add_image(filename: str):
-    """ add an image to the current axes """
+    """ Add an image to the current axes. """
     plt.imshow(plt.imread(filename))
     plt.xticks([])
     plt.yticks([])
 
 
 def changeFigureSize(w: float, h: float, cut_from_top: bool = False, cut_from_left: bool = False, fig: Figure = None):
-    """ change the figure size to the given dimensions. Optionally define if to remove or add space at the top or bottom
-        and left or right.
+    """ Change the figure size to the given dimensions.
+    Optionally define if to remove or add space at the top or bottom
+    and left or right.
     """
     if fig is None:
         fig = plt.gcf()
@@ -101,7 +105,7 @@ def changeFigureSize(w: float, h: float, cut_from_top: bool = False, cut_from_le
         x0, y0 = text.get_position()
         if cut_from_top:
             if cut_from_left:
-                text.set_position([1 - (1- x0) * fx, y0 * fy])
+                text.set_position([1 - (1 - x0) * fx, y0 * fy])
             else:
                 text.set_position([x0 * fx, y0 * fy])
         else:
@@ -113,7 +117,7 @@ def changeFigureSize(w: float, h: float, cut_from_top: bool = False, cut_from_le
 
 
 def removeContentFromFigure(fig: Figure):
-    """ remove axes and text from a figure """
+    """ Remove axes and text from a figure. """
     axes = []
     for ax in fig._axstack.as_list():
         axes.append(ax)
@@ -124,7 +128,7 @@ def removeContentFromFigure(fig: Figure):
 
 
 def addContentToFigure(fig: Figure, axes: Sequence):
-    """ add axes and texts to a figure """
+    """ Add axes and texts to a figure. """
     index = len(fig._axstack.as_list())
     for ax in axes:
         if isinstance(ax, Axes):
@@ -155,7 +159,7 @@ def get_unique_label(fig1, label_base):
 
 
 def imShowFullFigure(im: np.ndarray, filename: str, fig1: Figure, dpi: int, label: str):
-    """ create a new axes and display an image in this axes """
+    """ Create a new axes and display an image in this axes. """
     from matplotlib import rcParams
     if dpi is None:
         dpi = rcParams['figure.dpi']
@@ -169,9 +173,8 @@ def imShowFullFigure(im: np.ndarray, filename: str, fig1: Figure, dpi: int, labe
 
 
 class changeFolder:
-    """
-    An environment that changes the working directory
-    """
+    """ An environment that changes the working directory. """
+
     def __init__(self, directory):
         self.directory = directory
 
@@ -185,9 +188,9 @@ class changeFolder:
 
 
 def loadFigureFromFile(filename: str, figure: Figure = None, offset: list = None, dpi: int = None, cache: bool = False, label: str = ""):
-    """
-    Add contents to the current figure from the file defined by filename. It can be either a python script defining
-    a figure, an image (filename or directly the numpy array), or an svg file.
+    """ Add contents to the current figure from the file defined by filename.
+        It can be either a python script defining
+        a figure, an image (filename or directly the numpy array), or an svg file.
 
     See also :ref:`composing`.
 
@@ -205,8 +208,9 @@ def loadFigureFromFile(filename: str, figure: Figure = None, offset: list = None
         and may not be stable.
     """
     from matplotlib import rcParams
-    from pylustrator import changeFigureSize
+
     import pylustrator
+    from pylustrator import changeFigureSize
 
     if label == "":
         label = get_unique_label(figure if figure is not None else plt.gcf(), filename)
@@ -223,9 +227,8 @@ def loadFigureFromFile(filename: str, figure: Figure = None, offset: list = None
             figure = plt.gcf()
 
         class noShow:
-            """
-            An environment that prevents the script from calling the plt.show function
-            """
+            """ An environment that prevents the script from calling the plt.show function. """
+
             def __enter__(self):
                 # store the show function
                 self.show = plt.show
@@ -245,14 +248,14 @@ def loadFigureFromFile(filename: str, figure: Figure = None, offset: list = None
                 pylustrator.start = self.dragger
 
         class noNewFigures:
-            """
-            An environment that prevents the script from creating new figures in the figure manager
-            """
+            """An environment that prevents the script from creating new figures in the figure manager."""
+
             def __enter__(self):
                 fig = plt.gcf()
                 self.fig = plt.figure
                 figsize = rcParams['figure.figsize']
                 fig.set_size_inches(figsize[0], figsize[1])
+
                 def figure(num=None, figsize=None, *args, **kwargs):
                     fig = plt.gcf()
                     if figsize is not None:
@@ -262,7 +265,7 @@ def loadFigureFromFile(filename: str, figure: Figure = None, offset: list = None
 
             def __exit__(self, type, value, traceback):
                 from matplotlib.figure import Figure
-                from matplotlib.transforms import TransformedBbox, Affine2D
+                from matplotlib.transforms import Affine2D, TransformedBbox
                 plt.figure = self.fig
 
         # get the size of the old figure
@@ -358,12 +361,12 @@ def convertFromPyplot(old, new):
 
     str(new)  # important! (for some reason I don't know)
     for ax in old.axes:
-        #old.delaxes(ax)
+        # old.delaxes(ax)
         ax.remove()
         ax.figure = new
         new.axes.append(ax)
         new.add_axes(ax)
-        #new._axstack.add(new._make_key(ax), ax)
+        # new._axstack.add(new._make_key(ax), ax)
         new.bbox._parents.update(old.bbox._parents)
         new.dpi_scale_trans._parents.update(old.dpi_scale_trans._parents)
         replace_all_refs(old.bbox, new.bbox)
@@ -373,16 +376,18 @@ def convertFromPyplot(old, new):
 
 
 def mark_inset(parent_axes: Axes, inset_axes: Axes, loc1: Union[int, Sequence[int]] = 1, loc2: Union[int, Sequence[int]] = 2, **kwargs):
-    """ like the mark_inset function from matplotlib, but loc can also be a tuple """
-    from mpl_toolkits.axes_grid1.inset_locator import TransformedBbox, BboxPatch, BboxConnector
+    """ Like the mark_inset function from matplotlib, but loc can also be a tuple. """
+    from mpl_toolkits.axes_grid1.inset_locator import (BboxConnector,
+                                                       BboxPatch,
+                                                       TransformedBbox)
     try:
         loc1a, loc1b = loc1
-    except:
+    except Exception:
         loc1a = loc1
         loc1b = loc1
     try:
         loc2a, loc2b = loc2
-    except:
+    except Exception:
         loc2a = loc2
         loc2b = loc2
     rect = TransformedBbox(inset_axes.viewLim, parent_axes.transData)
@@ -402,8 +407,9 @@ def mark_inset(parent_axes: Axes, inset_axes: Axes, loc1: Union[int, Sequence[in
 
 
 def draw_from_point_to_bbox(parent_axes: Axes, insert_axes: Axes, point: Sequence, loc=1, **kwargs):
-    """ add a box connector from a point to an axes """
-    from mpl_toolkits.axes_grid1.inset_locator import TransformedBbox, BboxConnector, Bbox
+    """ Add a box connector from a point to an axes. """
+    from mpl_toolkits.axes_grid1.inset_locator import (Bbox, BboxConnector,
+                                                       TransformedBbox)
     rect = TransformedBbox(Bbox([point, point]), parent_axes.transData)
     # rect = TransformedBbox(Bbox([[1, 0], [1, 0]]), parent_axes.transData)
     p1 = BboxConnector(rect, insert_axes.bbox, loc, **kwargs)
@@ -413,8 +419,9 @@ def draw_from_point_to_bbox(parent_axes: Axes, insert_axes: Axes, point: Sequenc
 
 
 def draw_from_point_to_point(parent_axes: Axes, insert_axes: Axes, point1: Sequence, point2: Sequence, **kwargs):
-    """ add a box connector from a point in on axes to a point in another axes """
-    from mpl_toolkits.axes_grid1.inset_locator import TransformedBbox, BboxConnector, Bbox
+    """ Add a box connector from a point in on axes to a point in another axes. """
+    from mpl_toolkits.axes_grid1.inset_locator import (Bbox, BboxConnector,
+                                                       TransformedBbox)
     rect = TransformedBbox(Bbox([point1, point1]), parent_axes.transData)
     rect2 = TransformedBbox(Bbox([point2, point2]), insert_axes.transData)
     # rect = TransformedBbox(Bbox([[1, 0], [1, 0]]), parent_axes.transData)
@@ -426,7 +433,7 @@ def draw_from_point_to_point(parent_axes: Axes, insert_axes: Axes, point1: Seque
 
 
 def mark_inset_pos(parent_axes: Axes, inset_axes: Axes, loc1: Union[int, Sequence[int]], loc2: Union[int, Sequence[int]], point: Sequence, **kwargs):
-    """ add a box connector where the second axis is shrinked to a point """
+    """ Add a box connector where the second axis is shrinked to a point. """
     kwargs["lw"] = 0.8
     ax_new = plt.axes(inset_axes.get_position())
     ax_new.set_xlim(point[0], point[0])
@@ -437,12 +444,12 @@ def mark_inset_pos(parent_axes: Axes, inset_axes: Axes, loc1: Union[int, Sequenc
     ax_new.set_zorder(inset_axes.get_zorder() - 1)
 
 
-def VoronoiPlot(points: Sequence, values: Sequence, vmin: float = None, vmax:float = None, cmap=None):
-    """ plot the voronoi regions of the poins with the given colormap """
-    from matplotlib.patches import Polygon
-    from matplotlib.collections import PatchCollection
-    from scipy.spatial import Voronoi, voronoi_plot_2d
+def VoronoiPlot(points: Sequence, values: Sequence, vmin: float = None, vmax: float = None, cmap=None):
+    """ Plot the voronoi regions of the poins with the given colormap. """
     from matplotlib import cm
+    from matplotlib.collections import PatchCollection
+    from matplotlib.patches import Polygon
+    from scipy.spatial import Voronoi, voronoi_plot_2d
 
     if cmap is None:
         cmap = cm.get_cmap('viridis')
@@ -484,14 +491,14 @@ def VoronoiPlot(points: Sequence, values: Sequence, vmin: float = None, vmax:flo
 
 
 def selectRectangle(axes: Axes = None):
-    """ add a rectangle selector to the given axes """
+    """ Add a rectangle selector to the given axes. """
     if axes is None:
         axes = plt.gca()
 
     def onselect(eclick, erelease):
-        'eclick and erelease are matplotlib events at press and release'
-        print(' startposition : (%f, %f)' % (eclick.xdata, eclick.ydata))
-        print(' endposition   : (%f, %f)' % (erelease.xdata, erelease.ydata))
+        """ Eclick and erelease are matplotlib events at press and release. """
+        print(f' startposition : ({eclick.xdata:f}, {eclick.ydata:f})')
+        print(f' endposition   : ({erelease.xdata:f}, {erelease.ydata:f})')
         print(' used button   : ', eclick.button)
 
     from matplotlib.widgets import RectangleSelector
@@ -500,7 +507,7 @@ def selectRectangle(axes: Axes = None):
 
 
 def despine(ax: Axes = None, complete: bool = False):
-    """ despine the given axes """
+    """ Despine the given axes. """
     if not ax:
         ax = plt.gca()
     ax.spines['right'].set_visible(False)
@@ -516,10 +523,11 @@ def despine(ax: Axes = None, complete: bool = False):
         ax.xaxis.set_ticks_position('bottom')
 
 
-
 letter_index = 0
+
+
 def add_letter(ax: Axes = None, offset: float = 0, offset2: float = 0, letter: str = None):
-    """ add a letter indicating which subplot it is to the given figure """
+    """ Add a letter indicating which subplot it is to the given figure. """
     global letter_index
     from matplotlib.transforms import Affine2D, ScaledTranslation
 
@@ -547,11 +555,11 @@ def add_letter(ax: Axes = None, offset: float = 0, offset2: float = 0, letter: s
     transform = Affine2D().scale(1 / 2.54, 1 / 2.54) + fig.dpi_scale_trans + ScaledTranslation(0, 1, ax.transAxes)
 
     # add a text a the given position
-    ax.text(-0.5+offset, offset2, letter, fontproperties=font, transform=transform, ha="center", va="bottom", picker=True)
+    ax.text(-0.5 + offset, offset2, letter, fontproperties=font, transform=transform, ha="center", va="bottom", picker=True)
 
 
 def get_letter_font_prop():
-    """ get the properties of the subplot letters to add """
+    """ Get the properties of the subplot letters to add. """
     from matplotlib.font_manager import FontProperties
     font = FontProperties()
     font.set_family("C:\\WINDOWS\\Fonts\\HelveticaNeue-CondensedBold.ttf")
@@ -562,7 +570,7 @@ def get_letter_font_prop():
 
 
 def add_letters(*args, **kwargs):
-    """ add a letter indicating which subplot it is to all of the axes of the given figure """
+    """ Add a letter indicating which subplot it is to all of the axes of the given figure. """
     for ax in plt.gcf().axes:
         add_letter(ax, *args, **kwargs)
 
@@ -588,9 +596,9 @@ def axes_to_grid(axes=None, track_changes=False):
         new_indices = [0, 0]
         for i in [0, 1]:
             d = np.abs(pos[i] - center[i])
-            if len(d) == 0 or np.min(d) > dims[i]/2:
+            if len(d) == 0 or np.min(d) > dims[i] / 2:
                 pos[i].append(center[i])
-                new_indices[i] = len(pos[i])-1
+                new_indices[i] = len(pos[i]) - 1
             else:
                 new_indices[i] = np.argmin(d)
         axes_indices.append(new_indices)
@@ -614,21 +622,21 @@ def axes_to_grid(axes=None, track_changes=False):
     if x_count == 0:
         x_gap = 0
     else:
-        x_gap = ((x_max-x_min)-(x_count+1)*width)/x_count
+        x_gap = ((x_max - x_min) - (x_count + 1) * width) / x_count
     if y_count == 0:
         y_gap = 0
     else:
-        y_gap = ((y_max-y_min)-(y_count+1)*height)/y_count
+        y_gap = ((y_max - y_min) - (y_count + 1) * height) / y_count
 
     # make all the plots the same size and align them on the grid
     for i, ax in enumerate(axes):
-        ax.set_position([x_min+axes_indices[i][0] * (width+x_gap),
-                        y_min+axes_indices[i][1] * (height + y_gap),
+        ax.set_position([x_min + axes_indices[i][0] * (width + x_gap),
+                        y_min + axes_indices[i][1] * (height + y_gap),
                         width,
                         height,
-                        ])
+                         ])
         if track_changes is True:
-            ax.figure.change_tracker.addChange(ax, ".set_position([%f, %f, %f, %f])" % (x_min+axes_indices[i][0] * (width+x_gap), y_min+axes_indices[i][1] * (height + y_gap), width, height))
+            ax.figure.change_tracker.addChange(ax, f".set_position([{x_min + axes_indices[i][0] * (width + x_gap):f}, {y_min + axes_indices[i][1] * (height + y_gap):f}, {width:f}, {height:f}])")
 
     # make all the plots have the same limits
     xmin = np.min([ax.get_xlim()[0] for ax in axes])

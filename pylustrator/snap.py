@@ -19,28 +19,30 @@
 # You should have received a copy of the GNU General Public License
 # along with Pylustrator. If not, see <http://www.gnu.org/licenses/>
 
-from typing import List, Tuple, Optional
-from packaging import version
-from matplotlib.backends.qt_compat import QtCore, QtGui, QtWidgets
+from typing import List, Optional, Tuple
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.artist import Artist
+from matplotlib.backends.qt_compat import QtCore, QtGui, QtWidgets
+from packaging import version
+
 try:  # starting from mpl version 3.6.0
     from matplotlib.axes import Axes
-except:
+except Exception:
     from matplotlib.axes._subplots import Axes
+
 from matplotlib.legend import Legend
 from matplotlib.lines import Line2D
-from matplotlib.patches import Rectangle, Ellipse, FancyArrowPatch
+from matplotlib.patches import Ellipse, FancyArrowPatch, Rectangle
 from matplotlib.text import Text
+
 try:
     from matplotlib.figure import SubFigure  # since matplotlib 3.4.0
 except ImportError:
     SubFigure = None
 from .helper_functions import main_figure
-
 
 DIR_X0 = 1
 DIR_Y0 = 2
@@ -49,14 +51,14 @@ DIR_Y1 = 8
 
 
 def checkXLabel(target: Artist):
-    """ checks if the target is the xlabel of an axis """
+    """ Checks if the target is the xlabel of an axis. """
     for axes in target.figure.axes:
         if axes.xaxis.get_label() == target:
             return axes
 
 
 def checkYLabel(target: Artist):
-    """ checks if the target is the ylabel of an axis """
+    """ Checks if the target is the ylabel of an axis. """
     for axes in target.figure.axes:
         if axes.yaxis.get_label() == target:
             return axes
@@ -68,10 +70,12 @@ def cache_property(object, name):
     setattr(object, f"_pylustrator_cached_{name}", True)
     getter = getattr(object, f"get_{name}")
     setter = getattr(object, f"set_{name}")
+
     def new_getter(*args, **kwargs):
         if getattr(object, f"_pylustrator_cache_{name}", None) is None:
             setattr(object, f"_pylustrator_cache_{name}", getter(*args, **kwargs))
         return getattr(object, f"_pylustrator_cache_{name}", None)
+
     def new_setter(*args, **kwargs):
         result = setter(*args, **kwargs)
         setattr(object, f"_pylustrator_cache_{name}", None)
@@ -80,9 +84,9 @@ def cache_property(object, name):
     setattr(object, f"set_{name}", new_setter)
 
 
+class TargetWrapper():
+    """ A wrapper to add unified set and get position methods for any matplotlib artist. """
 
-class TargetWrapper(object):
-    """ a wrapper to add unified set and get position methods for any matplotlib artist """
     target = None
 
     def __init__(self, target: Artist):
@@ -131,7 +135,7 @@ class TargetWrapper(object):
             self.do_scale = False
 
     def get_positions(self, use_previous_offset=False, update_offset=False) -> (int, int, int, int):
-        """ get the current position of the target Artist """
+        """ Get the current position of the target Artist. """
         points = []
         if isinstance(self.target, Rectangle):
             points.append(self.target.get_xy())
@@ -194,7 +198,7 @@ class TargetWrapper(object):
         return self.transform_points(points)
 
     def set_positions(self, points: (int, int)):
-        """ set the position of the target Artist """
+        """ Set the position of the target Artist. """
         points = self.transform_inverted_points(points)
 
         if self.figure.figure is not None:
@@ -208,25 +212,25 @@ class TargetWrapper(object):
             self.target.set_height(points[1][1] - points[0][1])
             if self.target.get_label() is None or not self.target.get_label().startswith("_rect"):
                 change_tracker.addChange(self.target, ".set_xy([%f, %f])" % tuple(self.target.get_xy()))
-                change_tracker.addChange(self.target, ".set_width(%f)" % self.target.get_width())
-                change_tracker.addChange(self.target, ".set_height(%f)" % self.target.get_height())
+                change_tracker.addChange(self.target, f".set_width({self.target.get_width():f})")
+                change_tracker.addChange(self.target, f".set_height({self.target.get_height():f})")
         elif isinstance(self.target, Ellipse):
             self.target.center = np.mean(points, axis=0)
             self.target.width = points[1][0] - points[0][0]
             self.target.height = points[1][1] - points[0][1]
             change_tracker.addChange(self.target, ".center = (%f, %f)" % tuple(self.target.center))
-            change_tracker.addChange(self.target, ".width = %f" % self.target.width)
-            change_tracker.addChange(self.target, ".height = %f" % self.target.height)
+            change_tracker.addChange(self.target, f".width = {self.target.width:f}")
+            change_tracker.addChange(self.target, f".height = {self.target.height:f}")
         elif isinstance(self.target, FancyArrowPatch):
             self.target.set_positions(points[0], points[1])
             change_tracker.addChange(self.target,
-                                                 ".set_positions(%s, %s)" % (tuple(points[0]), tuple(points[1])))
+                                     f".set_positions({tuple(points[0])}, {tuple(points[1])})")
         elif isinstance(self.target, Text):
             if checkXLabel(self.target):
                 axes = checkXLabel(self.target)
                 axes.xaxis.labelpad = -(points[0][1] - self.target.pad_offset) / self.label_factor
                 change_tracker.addChange(axes,
-                                                     ".xaxis.labelpad = %f" % axes.xaxis.labelpad)
+                                         f".xaxis.labelpad = {axes.xaxis.labelpad:f}")
 
                 self.target.set_position(points[0])
                 self.label_y = points[0][1]
@@ -234,7 +238,7 @@ class TargetWrapper(object):
                 axes = checkYLabel(self.target)
                 axes.yaxis.labelpad = -(points[0][0] - self.target.pad_offset) / self.label_factor
                 change_tracker.addChange(axes,
-                                                     ".yaxis.labelpad = %f" % axes.yaxis.labelpad)
+                                         f".yaxis.labelpad = {axes.yaxis.labelpad:f}")
 
                 self.target.set_position(points[0])
                 self.label_x = points[0][0]
@@ -244,7 +248,7 @@ class TargetWrapper(object):
                     change_tracker.addNewTextChange(self.target)
                 else:
                     change_tracker.addChange(self.target,
-                                                     ".set_position([%f, %f])" % self.target.get_position())
+                                             ".set_position([%f, %f])" % self.target.get_position())
                 if getattr(self.target, "xy", None) is not None:
                     self.target.xy = points[1]
                     change_tracker.addChange(self.target, ".xy = (%f, %f)" % tuple(self.target.xy))
@@ -252,14 +256,14 @@ class TargetWrapper(object):
             point = self.target.axes.transAxes.inverted().transform(self.transform_inverted_points(points)[0])
             self.target._loc = tuple(point)
             change_tracker.addNewLegendChange(self.target)
-            #change_tracker.addChange(self.target, "._set_loc((%f, %f))" % tuple(point))
+            # change_tracker.addChange(self.target, "._set_loc((%f, %f))" % tuple(point))
         elif isinstance(self.target, Axes):
             position = np.array([points[0], points[1] - points[0]]).flatten()
             if self.fixed_aspect:
                 position[3] = position[2] * self.target.get_position().height / self.target.get_position().width
             self.target.set_position(position)
             change_tracker.addNewAxesChange(self.target)
-            #change_tracker.addChange(self.target, ".set_position([%f, %f, %f, %f])" % tuple(
+            # change_tracker.addChange(self.target, ".set_position([%f, %f, %f, %f])" % tuple(
             #    np.array([points[0], points[1] - points[0]]).flatten()))
         setattr(self.target, "_pylustrator_cached_get_extend", None)
 
@@ -272,7 +276,7 @@ class TargetWrapper(object):
         return getattr(self.target, "_pylustrator_cached_get_extend")
 
     def do_get_extent(self) -> (int, int, int, int):
-        """ get the extent of the target """
+        """ Get the extent of the target. """
         points = np.array(self.get_positions())
         return [np.min(points[:, 0]),
                 np.min(points[:, 1]),
@@ -280,18 +284,19 @@ class TargetWrapper(object):
                 np.max(points[:, 1])]
 
     def transform_points(self, points: (int, int)) -> (int, int):
-        """ transform points from the targets local coordinate system to the figure coordinate system """
+        """ Transform points from the targets local coordinate system to the figure coordinate system. """
         transform = self.get_transform()
         return [transform.transform(p) for p in points]
 
     def transform_inverted_points(self, points: (int, int)) -> (int, int):
-        """ transform points from the figure coordinate system to the targets local coordinate system """
+        """ Transform points from the figure coordinate system to the targets local coordinate system. """
         transform = self.get_transform()
         return [transform.inverted().transform(p) for p in points]
 
 
 class SnapBase():
     """ The base class to implement snaps. """
+
     data = None
 
     def __init__(self, ax_source: Artist, ax_target: Artist, edge: int):
@@ -308,25 +313,25 @@ class SnapBase():
         self.draw_path.setPen(pen1)
 
     def getPosition(self, target: TargetWrapper):
-        """ get the position of a target """
+        """ Get the position of a target. """
         try:
             return target.get_extent()
         except AttributeError:
             return np.array(target.figure.transFigure.transform(target.get_position())).flatten()
 
     def getDistance(self, index: int) -> (int, int):
-        """ Calculate the distance of the snap to its target """
+        """ Calculate the distance of the snap to its target. """
         return 0, 0
 
     def checkSnap(self, index: int) -> Optional[float]:
-        """ Return the distance to the targets or None """
+        """ Return the distance to the targets or None. """
         distance = self.getDistance(index)
         if abs(distance) < 10:
             return distance
         return None
 
     def checkSnapActive(self):
-        """ Test if the snap condition is fullfilled """
+        """ Test if the snap condition is fullfilled. """
         distance = min([self.getDistance(index) for index in [0, 1]])
         # show the snap if the distance to a target is smaller than 1
         if abs(distance) < 1:
@@ -335,7 +340,7 @@ class SnapBase():
             self.hide()
 
     def show(self):
-        """ Implements a visualisation of the snap, e.g. lines to indicate what objects are snapped to what """
+        """ Implements a visualisation of the snap, e.g. lines to indicate what objects are snapped to what. """
         pass
 
     def set_data(self, xdata, ydata):
@@ -363,11 +368,11 @@ class SnapBase():
         self.data = (xdata, ydata)
 
     def hide(self):
-        """ Hides the visualisation """
+        """ Hides the visualisation. """
         self.set_data((), ())
 
     def remove(self):
-        """ Remove the snap and its visualisation """
+        """ Remove the snap and its visualisation. """
         self.hide()
         try:
             self.draw_path.scene().removeItem(self.draw_path)
@@ -376,10 +381,10 @@ class SnapBase():
 
 
 class SnapSameEdge(SnapBase):
-    """ a snap that checks if two objects share an edge """
+    """ A snap that checks if two objects share an edge. """
 
     def getDistance(self, index: int) -> (int, int):
-        """ Calculate the distance of the snap to its target """
+        """ Calculate the distance of the snap to its target. """
         # only if the right edge index (x or y) is queried, if not the distance is infinite
         if self.edge % 2 != index:
             return np.inf
@@ -390,7 +395,7 @@ class SnapSameEdge(SnapBase):
         return p1[self.edge] - p2[self.edge]
 
     def show(self):
-        """ A visualisation of the snap, e.g. lines to indicate what objects are snapped to what """
+        """ A visualisation of the snap, e.g. lines to indicate what objects are snapped to what. """
         # get the position of both objects
         p1 = self.getPosition(self.ax_source)
         p2 = self.getPosition(self.ax_target)
@@ -405,10 +410,10 @@ class SnapSameEdge(SnapBase):
 
 
 class SnapSameDimension(SnapBase):
-    """ a snap that checks if two objects have the same width or height """
+    """ A snap that checks if two objects have the same width or height. """
 
     def getDistance(self, index: int) -> (int, int):
-        """ Calculate the distance of the snap to its target """
+        """ Calculate the distance of the snap to its target. """
         # only if the right edge index (x or y) is queried, if not the distance is infinite
         if self.edge % 2 != index:
             return np.inf
@@ -419,7 +424,7 @@ class SnapSameDimension(SnapBase):
         return (p2[self.edge - 2] - p2[self.edge]) - (p1[self.edge - 2] - p1[self.edge])
 
     def show(self):
-        """ A visualisation of the snap, e.g. lines to indicate what objects are snapped to what """
+        """ A visualisation of the snap, e.g. lines to indicate what objects are snapped to what. """
         # get the position of both objects
         p1 = self.getPosition(self.ax_source)
         p2 = self.getPosition(self.ax_target)
@@ -436,14 +441,14 @@ class SnapSameDimension(SnapBase):
 
 
 class SnapSamePos(SnapBase):
-    """ a snap that checks if two objects have the same position """
+    """ A snap that checks if two objects have the same position. """
 
     def getPosition(self, text: TargetWrapper) -> (int, int):
         # get the position of an object
         return np.array(text.get_transform().transform(text.target.get_position()))
 
     def getDistance(self, index: int) -> int:
-        """ Calculate the distance of the snap to its target """
+        """ Calculate the distance of the snap to its target. """
         # only if the right edge index (x or y) is queried, if not the distance is infinite
         if self.edge % 2 != index:
             return np.inf
@@ -454,7 +459,7 @@ class SnapSamePos(SnapBase):
         return p1[self.edge] - p2[self.edge]
 
     def show(self):
-        """ A visualisation of the snap, e.g. lines to indicate what objects are snapped to what """
+        """ A visualisation of the snap, e.g. lines to indicate what objects are snapped to what. """
         # get the position of both objects
         p1 = self.getPosition(self.ax_source)
         p2 = self.getPosition(self.ax_target)
@@ -463,17 +468,15 @@ class SnapSamePos(SnapBase):
 
 
 class SnapSameBorder(SnapBase):
-    """ A snap that checks if tree axes share the space between them """
+    """ A snap that checks if tree axes share the space between them. """
 
     def __init__(self, ax_source: Artist, ax_target: Artist, ax_target2: Artist, edge: int):
         super().__init__(ax_source, ax_target, edge)
         self.ax_target2 = ax_target2
 
     def overlap(self, p1: list, p2: list, dir: int):
-        """ Test if two objects have an overlapping x or y region """
-        if p1[dir + 2] < p2[dir] or p1[dir] > p2[dir + 2]:
-            return False
-        return True
+        """ Test if two objects have an overlapping x or y region. """
+        return not p1[dir + 2] < p2[dir] or p1[dir] > p2[dir + 2]
 
     def getBorders(self, p1: list, p2: list):
         borders = []
@@ -488,7 +491,7 @@ class SnapSameBorder(SnapBase):
         return np.array(borders)
 
     def getDistance(self, index: int):
-        """ Calculate the distance of the snap to its target """
+        """ Calculate the distance of the snap to its target. """
         # get the positions of all three targets
         p1 = self.getPosition(self.ax_source)
         p2 = self.getPosition(self.ax_target)
@@ -515,7 +518,7 @@ class SnapSameBorder(SnapBase):
         return np.inf
 
     def getConnection(self, p1: list, p2: list, dir: int):
-        """ return the coordinates of a line that spans the space between to axes """
+        """ Return the coordinates of a line that spans the space between to axes. """
         # check which edge (e.g. x, y) and which direction (e.g. if to change the order of p1 and p2)
         edge, order = dir // 2, dir % 2
         # optionally change p1 with p2
@@ -530,7 +533,7 @@ class SnapSameBorder(SnapBase):
         return [[x, x, np.nan], [p1[3], p2[1], np.nan]]
 
     def show(self):
-        """ A visualisation of the snap, e.g. lines to indicate what objects are snapped to what """
+        """ A visualisation of the snap, e.g. lines to indicate what objects are snapped to what. """
         # get the positions of all three axes
         p1 = self.getPosition(self.ax_source)
         p2 = self.getPosition(self.ax_target)
@@ -544,21 +547,21 @@ class SnapSameBorder(SnapBase):
 
 
 class SnapCenterWith(SnapBase):
-    """ A snap that checks if a text is centered with an axes """
+    """ A snap that checks if a text is centered with an axes. """
 
     def getPosition(self, text: TargetWrapper) -> (int, int):
-        """ get the position of the first object """
+        """ Get the position of the first object. """
         return np.array(text.get_transform().transform(text.target.get_position()))
 
     def getPosition2(self, axes: TargetWrapper) -> int:
-        """ get the position of the second object """
+        """ Get the position of the second object. """
         pos = np.array(axes.figure.transFigure.transform(axes.target.get_position()))
         p = pos[0, :]
         p[self.edge] = np.mean(pos, axis=0)[self.edge]
         return p
 
     def getDistance(self, index: int) -> int:
-        """ Calculate the distance of the snap to its target """
+        """ Calculate the distance of the snap to its target. """
         # only if the right edge index (x or y) is queried, if not the distance is infinite
         if self.edge % 2 != index:
             return np.inf
@@ -569,7 +572,7 @@ class SnapCenterWith(SnapBase):
         return p1[self.edge] - p2[self.edge]
 
     def show(self):
-        """ A visualisation of the snap, e.g. lines to indicate what objects are snapped to what """
+        """ A visualisation of the snap, e.g. lines to indicate what objects are snapped to what. """
         # get the position of both objects
         p1 = self.getPosition(self.ax_source)
         p2 = self.getPosition2(self.ax_target)
@@ -578,7 +581,7 @@ class SnapCenterWith(SnapBase):
 
 
 def checkSnaps(snaps: List[SnapBase]) -> (int, int):
-    """ get the x and y offsets the snaps suggest """
+    """ Get the x and y offsets the snaps suggest. """
     result = [0, 0]
     # iterate over x and y
     for index in range(2):
@@ -596,13 +599,13 @@ def checkSnaps(snaps: List[SnapBase]) -> (int, int):
 
 
 def checkSnapsActive(snaps: List[SnapBase]):
-    """ check if snaps are active and show them if yes """
+    """ Check if snaps are active and show them if yes. """
     for snap in snaps:
         snap.checkSnapActive()
 
 
 def getSnaps(targets: List[TargetWrapper], dir: int, no_height=False) -> List[SnapBase]:
-    """ get all snap objects for the target and the direction """
+    """ Get all snap objects for the target and the direction. """
     snaps = []
     targets = [t.target for t in targets]
     for target in targets:

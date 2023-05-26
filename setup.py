@@ -19,10 +19,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Pylustrator. If not, see <http://www.gnu.org/licenses/>
 
-from setuptools import setup
-
 # read the contents of your README file
 from pathlib import Path
+
+from setuptools import setup
+
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
@@ -41,6 +42,6 @@ setup(name='pylustrator',
           'numpy',
           'matplotlib',
           'qtawesome',
-          'scikit-image'
+          'scikit-image',
       ],
       )

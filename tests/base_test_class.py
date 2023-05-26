@@ -1,17 +1,19 @@
-import unittest
-import numpy as np
 import re
+import unittest
 from pathlib import Path
-import matplotlib.pyplot as plt
-from matplotlib.backend_bases import MouseEvent, KeyEvent
 from typing import Any
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.backend_bases import KeyEvent, MouseEvent
 
 
 def ensure_list(obj, count=1):
     if isinstance(obj, list):
         return obj
     else:
-        return [obj]*count
+        return [obj] * count
+
 
 def select_elements(fig, get_obj_list):
     if not isinstance(get_obj_list, list):
@@ -32,8 +34,10 @@ def select_elements(fig, get_obj_list):
 class Undefined:
     pass
 
+
 class NotInSave:
     pass
+
 
 class Value:
     def __init__(self, value, value_saved=Undefined):
@@ -114,7 +118,7 @@ plt.show(hide_window=True)
                         def grab_args(*args, **kwargs):
                             return args, kwargs
 
-                        arguments = re.match(re.escape(line_start)+r"(.*)\)", line).groups()[0]
+                        arguments = re.match(re.escape(line_start) + r"(.*)\)", line).groups()[0]
                         return line, eval(f"grab_args({arguments})")
                 if line.startswith("#% start: automatic generated code from pylustrator"):
                     in_block = True
@@ -153,7 +157,7 @@ plt.show(hide_window=True)
             if value2 is NotInSave:
                 return
             if property_name == "visible" and line_command.endswith(".text("):
-                kwargs = dict(visible=False)
+                kwargs = {"visible": False}
             else:
                 raise err
         if line_command.endswith(".text("):
@@ -291,12 +295,12 @@ plt.show(hide_window=True)
 
         # test if the text has the right weight
         self.compare_list(get_obj_list, get_function(), value_list,
-                            f"Property '{property_name_list[0]}' not set correctly. [{test_run}]")
+                          f"Property '{property_name_list[0]}' not set correctly. [{test_run}]")
 
         # test undo and redo
         fig.window.undo()
         self.compare_list(get_obj_list, get_function(), current_values,
-                            f"Property '{property_name_list[0]}' undo failed. [{test_run}]")
+                          f"Property '{property_name_list[0]}' undo failed. [{test_run}]")
 
         if self.no_undo_save_test is False:
             # the output after undo should be the same as the beginning
@@ -307,7 +311,7 @@ plt.show(hide_window=True)
 
         fig.window.redo()
         self.compare_list(get_obj_list, get_function(), value_list,
-                            f"Property '{property_name_list[0]}' redo failed. [{test_run}]")
+                          f"Property '{property_name_list[0]}' redo failed. [{test_run}]")
 
         print("\n---- save after redo ----", end="")
         fig.change_tracker.save()
@@ -326,7 +330,7 @@ plt.show(hide_window=True)
         try:
             # test if the text has the right weight
             self.compare_list(get_obj_list, get_function(), value_list,
-                                f"Property '{property_name_list[0]}' not set failed. [{test_run}]")
+                              f"Property '{property_name_list[0]}' not set failed. [{test_run}]")
 
             # don't move it and save the result
             self.move_element((0, 0), get_obj_list)
